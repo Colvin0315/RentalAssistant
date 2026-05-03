@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RentGuard | 合同风险审阅台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="grain"></div>
+    <main class="shell">
+      <section class="hero panel reveal">
+        <div class="hero-copy">
+          <p class="eyebrow">RentGuard / Rental Contract Intelligence Desk</p>
+          <h1>把一份租房合同，变成一张可推理、可追溯、可行动的审阅稿。</h1>
+          <p class="hero-text">
+            这不是普通聊天框。它更像一张正在工作的合同编辑台：左侧处理材料，中间审阅问答，右侧生成风险与行动建议。
+          </p>
+        </div>
+        <div class="hero-meta">
+          <div class="meta-card">
+            <span>默认后端</span>
+            <strong id="api-base-preview">http://127.0.0.1:8000/api/v1</strong>
+          </div>
+          <div class="meta-card">
+            <span>当前文档</span>
+            <strong id="active-document">未载入</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="control-bar panel reveal">
+        <label class="field grow">
+          <span>API Base URL</span>
+          <input id="apiBase" type="text" value="http://127.0.0.1:8000/api/v1" />
+        </label>
+        <button id="pingBtn" class="button ghost">测试连接</button>
+        <div id="connectionState" class="status-pill idle">等待连接</div>
+      </section>
+
+      <section class="grid">
+        <div class="column column-wide">
+          <article class="panel reveal">
+            <div class="section-head">
+              <p class="kicker">01 / Intake</p>
+              <h2>材料导入</h2>
+            </div>
+
+            <form id="uploadForm" class="stack">
+              <div class="field-grid">
+                <label class="field">
+                  <span>材料类型</span>
+                  <select id="documentType">
+                    <option value="contract">合同</option>
+                    <option value="chatlog">聊天记录</option>
+                    <option value="listing">房源描述</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>上传文件</span>
+                  <input id="documentFile" type="file" required />
+                </label>
+              </div>
+              <button class="button primary" type="submit">上传并登记文档</button>
+            </form>
+
+            <div class="pipeline">
+              <button id="parseBtn" class="button secondary" disabled>解析文档</button>
+              <button id="indexBtn" class="button secondary" disabled>建立索引</button>
+              <button id="riskBtn" class="button secondary" disabled>扫描风险</button>
+            </div>
+
+            <div class="doc-summary">
+              <div class="summary-box">
+                <span>Document ID</span>
+                <strong id="documentId">-</strong>
+              </div>
+              <div class="summary-box">
+                <span>状态</span>
+                <strong id="documentStatus">未开始</strong>
+              </div>
+              <div class="summary-box">
+                <span>切分条款数</span>
+                <strong id="chunkCount">-</strong>
+              </div>
+            </div>
+
+            <div>
+              <div class="section-head compact">
+                <p class="kicker">Extracted Fields</p>
+                <h3>结构化字段</h3>
+              </div>
+              <div id="fieldsPanel" class="tag-cloud empty">解析后会在这里显示租金、押金、租期等字段。</div>
+            </div>
+          </article>
+
+          <article class="panel reveal">
+            <div class="section-head">
+              <p class="kicker">02 / Reasoning</p>
+              <h2>合同问答</h2>
+            </div>
+
+            <form id="qaForm" class="stack">
+              <label class="field">
+                <span>问题</span>
+                <textarea
+                  id="questionInput"
+                  rows="4"
+                  placeholder="例如：如果我提前退租，押金会不会被扣？"
+                  required
+                ></textarea>
+              </label>
+              <div class="prompt-row">
+                <button type="button" class="chip" data-question="如果我提前退租，押金会不会被扣？">提前退租</button>
+                <button type="button" class="chip" data-question="合同里有没有写押金退还条件？">押金退还</button>
+                <button type="button" class="chip" data-question="空调坏了应该由谁负责维修？">维修责任</button>
+              </div>
+              <button id="askBtn" class="button primary" type="submit" disabled>生成带证据的回答</button>
+            </form>
+
+            <div class="answer-sheet">
+              <div class="sheet-head">
+                <span>Answer Draft</span>
+                <strong id="sessionId">Session: -</strong>
+              </div>
+              <div id="answerPanel" class="answer-body empty">提问后，这里会展示回答正文。</div>
+            </div>
+
+            <div class="two-up">
+              <div>
+                <div class="section-head compact">
+                  <p class="kicker">Citations</p>
+                  <h3>证据片段</h3>
+                </div>
+                <div id="citationsPanel" class="list-box empty">回答引用的条款会显示在这里。</div>
+              </div>
+              <div>
+                <div class="section-head compact">
+                  <p class="kicker">Flags</p>
+                  <h3>风险提示</h3>
+                </div>
+                <div id="qaRiskPanel" class="list-box empty">问答阶段捕捉到的高风险提示会显示在这里。</div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="column">
+          <article class="panel reveal">
+            <div class="section-head">
+              <p class="kicker">03 / Audit</p>
+              <h2>风险审阅</h2>
+            </div>
+            <div id="riskPanel" class="risk-stack empty">点击“扫描风险”后，系统会把命中的风险条款列在这里。</div>
+          </article>
+
+          <article class="panel reveal">
+            <div class="section-head">
+              <p class="kicker">04 / Action</p>
+              <h2>沟通话术生成</h2>
+            </div>
+            <form id="draftForm" class="stack">
+              <div class="field-grid">
+                <label class="field">
+                  <span>场景</span>
+                  <select id="draftScenario">
+                    <option value="deposit_refund">押金退还</option>
+                    <option value="early_termination">提前退租协商</option>
+                    <option value="repair_request">维修责任确认</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>语气</span>
+                  <select id="draftTone">
+                    <option value="polite">礼貌</option>
+                    <option value="firm">坚定</option>
+                    <option value="neutral">中性</option>
+                  </select>
+                </label>
+              </div>
+              <button id="draftBtn" class="button secondary" type="submit" disabled>生成沟通草稿</button>
+            </form>
+            <div id="draftPanel" class="note-card empty">生成的话术草稿会显示在这里。</div>
+          </article>
+
+          <article class="panel reveal">
+            <div class="section-head">
+              <p class="kicker">05 / Metrics</p>
+              <h2>演示评测</h2>
+            </div>
+            <form id="evalForm" class="stack">
+              <label class="field">
+                <span>数据集名</span>
+                <input id="datasetName" type="text" value="golden_cases_v1" />
+              </label>
+              <button id="evalBtn" class="button secondary" type="submit" disabled>运行评测</button>
+            </form>
+            <div id="evalPanel" class="metrics empty">运行后会显示回答准确率、引用准确率、风险召回率等指标。</div>
+          </article>
+
+          <article class="panel reveal">
+            <div class="section-head">
+              <p class="kicker">06 / Trace</p>
+              <h2>会话日志</h2>
+            </div>
+            <button id="logsBtn" class="button ghost" disabled>拉取当前 Session 日志</button>
+            <div id="logsPanel" class="timeline empty">问答日志将以时间线形式展示在这里。</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="footer-note reveal">
+        <p>
+          提示：先上传文档，再依次执行“解析文档”和“建立索引”，之后问答、风险审查、话术生成和评测都会可用。
+        </p>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

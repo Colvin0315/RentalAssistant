@@ -1,0 +1,16 @@
+.DS_Store
+Thumbs.db
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+storage/logs/
+storage/uploads/
+storage/parsed/
+storage/indexes/
+
+node_modules/
+dist/
+build/
